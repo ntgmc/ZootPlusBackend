@@ -27,9 +27,11 @@ import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.controller.response.user.MaaLoginRsp
 import plus.maa.backend.controller.response.user.MaaUserInfo
 import plus.maa.backend.controller.response.user.RelationType
+import plus.maa.backend.controller.response.user.UserProfileStatsInfo
 import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.repository.entity.UserEntity
 import plus.maa.backend.repository.entity.users
+import plus.maa.backend.repository.ktorm.CopilotKtormRepository
 import plus.maa.backend.repository.ktorm.UserKtormRepository
 import plus.maa.backend.service.jwt.JwtExpiredException
 import plus.maa.backend.service.jwt.JwtInvalidException
@@ -45,6 +47,7 @@ import plus.maa.backend.cache.InternalComposeCache as Cache
 class UserService(
     private val database: Database,
     private val userKtormRepository: UserKtormRepository,
+    private val copilotKtormRepository: CopilotKtormRepository,
     private val emailService: EmailService,
     private val passwordEncoder: PasswordEncoder,
     private val userDetailService: UserDetailServiceImpl,
@@ -301,6 +304,22 @@ class UserService(
         return base.copy(
             relation = relation,
             specialFollow = currentUserId != targetId && userKtormRepository.isSpecialFollowing(currentUserId, targetId),
+        )
+    }
+
+    /**
+     * 查询用户主页统计信息
+     */
+    fun getProfileStats(targetId: Long): UserProfileStatsInfo {
+        val userEntity = userKtormRepository.findById(targetId)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+        val (copilotCount, receivedLikeCount) = copilotKtormRepository.getPublicProfileStatsByUploader(targetId)
+        return UserProfileStatsInfo(
+            userId = userEntity.userId.toString(),
+            followingCount = userEntity.followingCount,
+            fansCount = userEntity.fansCount,
+            copilotCount = copilotCount,
+            receivedLikeCount = receivedLikeCount,
         )
     }
 

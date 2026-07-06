@@ -29,6 +29,7 @@ import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.user.MaaLoginRsp
 import plus.maa.backend.controller.response.user.MaaUserInfo
+import plus.maa.backend.controller.response.user.UserProfileStatsInfo
 import plus.maa.backend.service.EmailService
 import plus.maa.backend.service.UserService
 
@@ -181,14 +182,25 @@ class UserController(
     }
 
     /**
+     * 查询用户主页统计信息
+     */
+    @GetMapping("/profile/stats")
+    @Operation(summary = "查询用户主页统计信息")
+    @ApiResponse(responseCode = "200", description = "用户主页统计信息")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    fun getProfileStats(@RequestParam userId: String): MaaResult<UserProfileStatsInfo> {
+        val targetId = userId.toLongOrNull()
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user ID")
+        return success(userService.getProfileStats(targetId))
+    }
+
+    /**
      * 批量获取用户信息
      */
     @GetMapping("/batch")
     @Operation(summary = "批量获取用户信息")
     @ApiResponse(description = "用户信息列表")
-    fun getBatchUserInfo(
-        @RequestParam ids: List<Long>,
-            ): MaaResult<List<MaaUserInfo>> {
+    fun getBatchUserInfo(@RequestParam ids: List<Long>): MaaResult<List<MaaUserInfo>> {
         if (ids.size > 50) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "单次查询用户量不能超过50")
         }

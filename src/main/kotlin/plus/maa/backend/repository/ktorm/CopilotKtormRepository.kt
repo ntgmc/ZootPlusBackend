@@ -2,11 +2,17 @@ package plus.maa.backend.repository.ktorm
 
 import org.ktorm.database.Database
 import org.ktorm.dsl.and
+import org.ktorm.dsl.count
 import org.ktorm.dsl.eq
+import org.ktorm.dsl.from
 import org.ktorm.dsl.gte
+import org.ktorm.dsl.map
 import org.ktorm.dsl.or
 import org.ktorm.dsl.plus
+import org.ktorm.dsl.select
+import org.ktorm.dsl.sum
 import org.ktorm.dsl.update
+import org.ktorm.dsl.where
 import org.ktorm.entity.add
 import org.ktorm.entity.any
 import org.ktorm.entity.filter
@@ -17,6 +23,7 @@ import org.springframework.stereotype.Repository
 import plus.maa.backend.repository.entity.CopilotEntity
 import plus.maa.backend.repository.entity.Copilots
 import plus.maa.backend.repository.entity.copilots
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.time.LocalDateTime
 
 @Repository
@@ -72,6 +79,22 @@ class CopilotKtormRepository(
         return entities.filter {
             (it.uploadTime gte uploadTimeAfter) or (it.deleteTime gte deleteTimeAfter)
         }.toList()
+    }
+
+    fun getPublicProfileStatsByUploader(uploaderId: Long): Pair<Long, Long> {
+        val copilotCount = count(Copilots.copilotId)
+        val receivedLikeCount = sum(Copilots.likeCount)
+        return database.from(Copilots)
+            .select(copilotCount, receivedLikeCount)
+            .where {
+                (Copilots.uploaderId eq uploaderId) and
+                    (Copilots.delete eq false) and
+                    (Copilots.status eq CopilotSetStatus.PUBLIC)
+            }
+            .map { row ->
+                row.getInt(1).toLong() to row.getLong(2)
+            }
+            .firstOrNull() ?: (0L to 0L)
     }
 
     fun incrViews(id: Long) {

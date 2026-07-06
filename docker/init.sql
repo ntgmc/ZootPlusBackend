@@ -89,6 +89,9 @@ comment on column copilot.delete is '作业状态，后端默认设置为公开�
 create index if not exists idx_copilot_stage_name on copilot (stage_name);
 create index if not exists idx_copilot_view on copilot (views);
 create index if not exists idx_hot_score on copilot (hot_score);
+create index if not exists idx_copilot_public_uploader_stats
+  on copilot (uploader_id, copilot_id) include (like_count)
+  where delete = false and status = 'PUBLIC';
 
 -- 作业干员表
 create table if not exists copilot_operator
